@@ -1,12 +1,12 @@
 package DBD::Multi;
-# $Id: Multi.pm,v 1.10 2006/02/10 18:37:40 wright Exp $
+# $Id: Multi.pm,v 1.11 2006/06/21 23:52:25 wright Exp $
 use strict;
 
 use base qw[DBD::File];
 
 use vars qw[$VERSION $err $errstr $sqlstate $drh];
 
-$VERSION   = '0.01';
+$VERSION   = '0.02';
 
 $err       = 0;        # DBI::err
 $errstr    = "";       # DBI::errstr
@@ -392,11 +392,14 @@ DBD::Multi - Manage Multiple Data Sources with Failover and Load Balancing
 
   use DBI;
 
+  my $other_dbh = DBI->connect(...);
+
   my $dbh = DBI->connect( 'dbi:Multi:', undef, undef, {
       dsns => [ # in priority order
           10 => [ 'dbi:SQLite:read_one.db', '', '' ],
           10 => [ 'dbi:SQLite:read_two.db', '', '' ],
           20 => [ 'dbi:SQLite:master.db',   '', '' ],
+          30 => $other_dbh,
       ],
       # optional
       failed_max    => 1,     # short credibility
@@ -412,6 +415,9 @@ and your available databases.
 Although there is some code intended for read/write operations, this should be
 considered EXPIREMENTAL.  This module is primary intended for read-only
 operations (where some other application is being used to handle replication).
+This software does not prevent write operations from being executed.  This is
+left up to the user. (One suggestion is to make sure the user your a connecting
+to the db as has privileges sufficiently restricted to prevent updates).
 
 The interface is nearly the same as other DBI drivers with one notable
 exception.
@@ -420,10 +426,21 @@ exception.
 
 Specify an attribute to the C<connect()> constructor, C<dsns>. This is a list
 of DSNs to configure. The configuration is given in pairs. First comes the
-priority of the DSN, lowest is tried first. Second is the DSN.
+priority of the DSN. Second is the DSN.
+
+The priorities specify which connections should be used first (lowest to
+highest).  As long as the lowest priority connection is responding, the higher
+priority connections will never be used.  If multiple connections have the same
+priority, then one connection will be chosen randomly for each operation.  Note
+that the random DB is chosen when the statement is prepared.   Therefore
+executing multiple queries on the same prepared statement handle will always
+run on the same connection.
 
 The second parameter can either be a DBI object or a list of parameters to pass
-to the DBI C<connect()> instructor.
+to the DBI C<connect()> instructor.   If a set of parameters is given, then
+DBD::Multi will be able to attempt re-connect in the event that the connection
+is lost.   If a DBI object is used, the DBD::Multi will give up permanently
+once that connection is lost.
 
 =head2 Configuring Failures
 
@@ -444,9 +461,10 @@ L<perl>.
 
 =head1 AUTHOR
 
-Initially written by Casey West for pair Networks, Inc. (www.pair.com)
+Initially written by Casey West and Dan Wright for pair Networks, Inc.
+(www.pair.com)
 
-Maintained by Dan Wright for pair Networks, Inc.  <F<DWRIGHT@CPAN.ORG>>.
+Maintained by Dan Wright.  <F<DWRIGHT@CPAN.ORG>>.
 
 =cut
 

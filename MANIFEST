@@ -17,4 +17,7 @@ t/dbd-multi-dr.t
 t/dbd-multi-multi.t
 t/dbd-multi-st.t
 t/dbd-multi.t
+t/00-load.t
+t/pod-coverage.t
+t/pod.t
 TODO
