@@ -51,7 +51,7 @@ SEE ALSO
     DBD::Multiplex, DBI, perl.
 
 AUTHOR
-    Initially written by Casey West for pair Networks, Inc. (www.pair.com)
+    Initially written by Casey West and Dan Wright for pair Networks, Inc. (www.pair.com)
 
     Maintained by Dan Wright for pair Networks, Inc. <DWRIGHT@CPAN.ORG>.
 

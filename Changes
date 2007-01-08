@@ -6,3 +6,7 @@
 
   - Cleaned up documentation a little.
   - Fixed some regression tests.
+
+0.03    2007-01-08
+
+  - Regression tests to verify random selection works, submitted by MARKSTOS@cpan.org

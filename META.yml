@@ -16,4 +16,4 @@ no_index:
 requires: 
   Class::Accessor::Fast: 0.19
   perl: 5.005
-version: 0.02
+version: 0.03

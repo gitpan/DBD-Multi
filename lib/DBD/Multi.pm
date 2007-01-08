@@ -1,12 +1,12 @@
 package DBD::Multi;
-# $Id: Multi.pm,v 1.11 2006/06/21 23:52:25 wright Exp $
+# $Id: Multi.pm,v 1.12 2007/01/08 23:01:40 wright Exp $
 use strict;
 
 use base qw[DBD::File];
 
 use vars qw[$VERSION $err $errstr $sqlstate $drh];
 
-$VERSION   = '0.02';
+$VERSION   = '0.03';
 
 $err       = 0;        # DBI::err
 $errstr    = "";       # DBI::errstr
