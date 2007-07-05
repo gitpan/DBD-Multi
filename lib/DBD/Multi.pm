@@ -1,12 +1,12 @@
 package DBD::Multi;
-# $Id: Multi.pm,v 1.12 2007/01/08 23:01:40 wright Exp $
+# $Id: Multi.pm,v 1.16 2007/07/05 22:55:19 wright Exp $
 use strict;
 
 use base qw[DBD::File];
 
 use vars qw[$VERSION $err $errstr $sqlstate $drh];
 
-$VERSION   = '0.03';
+$VERSION   = '0.10';
 
 $err       = 0;        # DBI::err
 $errstr    = "";       # DBI::errstr
@@ -219,6 +219,51 @@ package DBD::Multi::Handler;
 use strict;
 
 use base qw[Class::Accessor::Fast];
+use Sys::SigAction qw(timeout_call);
+
+=begin ImplementationNotes
+
+dsources - This thing changes from an arrayref to a hashref during construction.  :(
+
+  Initially, when data is passed in during construction, it's an arrayref
+  containing the 'dsns' param from the user's connect() call.
+
+  Later, when _configure_dsources gets called, it turns into a multi-dimension
+  hashref:
+
+       $dsources->{$pri}->{$dsource_id} = 1;
+
+  The first key is the priority number, the second key is the data source index
+  number.  The value is always just a true value.
+
+nextid - A counter.  Stores the index number of the next data source to be added.
+
+all_dsources - A hashref.  Maps index number to the connect data.
+
+current_dsource - The most recent chosen datasource index number.
+
+used - A hashref.  Keys are index numbers.  Values are true when the datasource
+has been previously assigned and we want to prefer other datasources of the
+same priority (for round-robin load distribution).
+
+failed - A hashref.   Keys are index numbers.   Values are counters indicating
+how many times the data source has failed.
+
+failed_last - A hashref.   Keys are index number.   Values are unix timestamp
+indicating the most recent time a data source failed.
+
+failed_max - A scalar value.   Number of times a datasource may fail before we
+stop trying it.
+
+failed_expire - A scalar value.   Number of seconds since we stopped trying a
+datasource before we'll try it again.
+
+timeout - A scalar value.   Number of seconds we try to connect to a datasource
+before giving up.
+
+=end ImplementationNotes
+
+=cut
 
 __PACKAGE__->mk_accessors(qw[
     dsources
@@ -230,6 +275,7 @@ __PACKAGE__->mk_accessors(qw[
     failed_last
     failed_max
     failed_expire
+    timeout
 ]);
 
 sub new {
@@ -242,6 +288,7 @@ sub new {
     $self->failed_last({});
     $self->failed_max(3) unless defined $self->failed_max;
     $self->failed_expire(60*5) unless defined $self->failed_expire;
+    $self->timeout( 5 ) unless defined $self->timeout;
     $self->_configure_dsources;
     return $self;
 }
@@ -354,9 +401,19 @@ sub _connect_dsource {
         $dsource = $self->all_dsources->{$self->current_dsource};
     }
 
+    # Support ready-made handles
     return $dsource if UNIVERSAL::isa($dsource, 'DBI::db');
 
-    my $dbh = DBI->connect_cached(@{$dsource});
+    # Support code-refs which return handles
+    if (ref $dsource eq 'CODE') {
+        my $handle = $dsource->();
+        return $handle if UNIVERSAL::isa($handle, 'DBI::db');
+    }
+
+    my $dbh;
+    if (timeout_call( $self->timeout, sub { $dbh = DBI->connect_cached(@{$dsource}) } )) {
+        #warn "Timeout[", $self->current_dsource, "] at ", time, "\n";
+    }
     return $dbh;
 }
 
@@ -400,24 +457,26 @@ DBD::Multi - Manage Multiple Data Sources with Failover and Load Balancing
           10 => [ 'dbi:SQLite:read_two.db', '', '' ],
           20 => [ 'dbi:SQLite:master.db',   '', '' ],
           30 => $other_dbh,
+          40 => sub {  DBI->connect },
       ],
       # optional
       failed_max    => 1,     # short credibility
       failed_expire => 60*60, # long memory
+      timeout       => 10,    # time out connection attempts after 10 seconds.
   });
 
 =head1 DESCRIPTION
 
-This software manages multiple database connections for the purposes of load
-balancing and simple failover procedures. It acts as a proxy between your code
-and your available databases.
+This software manages multiple database connections for failovers and also
+simple load balancing.  It acts as a proxy between your code and your database
+connections, transparently choosing a connection for each query, based on your
+preferences and present availability of the DB server.
 
-Although there is some code intended for read/write operations, this should be
-considered EXPIREMENTAL.  This module is primary intended for read-only
-operations (where some other application is being used to handle replication).
+This module is intended for read-only operations (where some other application
+is being used to handle replication).
+
 This software does not prevent write operations from being executed.  This is
-left up to the user. (One suggestion is to make sure the user your a connecting
-to the db as has privileges sufficiently restricted to prevent updates).
+left up to the user. See L<SUGGESTED USES> below for ideas.
 
 The interface is nearly the same as other DBI drivers with one notable
 exception.
@@ -436,25 +495,73 @@ that the random DB is chosen when the statement is prepared.   Therefore
 executing multiple queries on the same prepared statement handle will always
 run on the same connection.
 
-The second parameter can either be a DBI object or a list of parameters to pass
-to the DBI C<connect()> instructor.   If a set of parameters is given, then
-DBD::Multi will be able to attempt re-connect in the event that the connection
-is lost.   If a DBI object is used, the DBD::Multi will give up permanently
-once that connection is lost.
+The second parameter can a DBI object, a code ref which returns a DBI object,
+or a list of parameters to pass to the DBI C<connect()> instructor.   If a set
+of parameters or a code ref is given, then DBD::Multi will be able to attempt
+re-connect in the event that the connection is lost.   If a DBI object is used,
+the DBD::Multi will give up permanently once that connection is lost.
+
+These connections are lazy loaded, meaning they aren't made until they are
+actually used. 
 
 =head2 Configuring Failures
 
-By default a data source will not be tried again after it has failed
-three times. After five minutes that failure status will be removed and
-the data source may be tried again for future requests.
+By default, after a data source fails three times, it will not be tried again
+for 5 minutes.  After that period, the data source will be tried again for
+future requests until it reaches its three failure limit (the cycle repeats
+forever).
 
 To change the maximum number of failures allowed before a data source is
 deemed failed, set the C<failed_max> parameter. To change the amount of
 time we remember a data source as being failed, set the C<failed_expire>
 parameter in seconds.
 
+=head2 Timing out connections.
+
+By default, if you attempt to connect to an IP that isn't answering, DBI will
+hang for a very long period of time.   This behavior is not desirable in a
+multi database setup.   Instead, it is better to give up on slow connections
+and move on to other databases quickly.
+
+DBD::Multi will give up on connection attempts after 5 seconds and then try
+another connection.   You may set the C<timeout> parameter to change the
+timeout time, or set it to 0 to disable the timeout feature completely.
+
+=head1 SUGGESTED USES
+
+Here are some ideas on how to use this module effectively and safely. 
+
+It is important to remember that C<DBD::Multi> is not intended for read-write
+operations.  One suggestion to prevent accidental write operations is to make
+sure the user your a connecting to the db as has privileges sufficiently
+restricted to prevent updates. 
+
+Read-write operations should happen through a separate database handle that
+will somehow trigger replication to all of your databases.  For example, your
+read-write handle might be connected to the master server that replicates
+itself to all of the subordinate servers.
+
+Read-only database calls within your application would be updated to explicitly
+use the read-only (DBD::Multi) handle. It is not necessary to find every single
+call that can be load balanced, since they can safely be sent through the
+read/write handle as well.
+
+=head1 TODO
+
+There really isn't much of a TODO list for this module at this time.  Feel free
+to submit a bug report to rt.cpan.org if you think there is a feature missing.
+
+Although there is some code intended for read/write operations, this should be
+considered note supported and not actively developed at this time.  The actual
+read/write code remains un-documented because in the event that I ever do
+decide to work on supporting read/write operations, the API is not guaranteed
+to stay the same.  The focus of this module is presently limited to read-only
+operations.
+
 =head1 SEE ALSO
 
+L<CGI::Application::Plugin::DBH> - A plugin for the L<CGI::Application> framework
+which makes it easy to support two database handles, and also supports lazy-loading.
 L<DBD::Multiplex>,
 L<DBI>,
 L<perl>.

@@ -1,19 +1,19 @@
+name: DBD-Multi
+version: 0.10
 abstract: Failover and Load Balancing of DBI Handles
 author: Dan Wright <dwright@cpan.org>
-build_requires: 
+license: perl
+distribution_type: module
+build_requires:
+  Test::Pod::Coverage: 1.04
+  Test::Pod: 1.14
   Pod::Simple: 0
   Test::More: 0
-  Test::Pod: 1.14
-  Test::Pod::Coverage: 1.04
-distribution_type: module
-generated_by: Module::Install version 0.63
-license: perl
-name: DBD-Multi
-no_index: 
-  directory: 
-    - inc
-    - t
-requires: 
-  Class::Accessor::Fast: 0.19
+requires:
   perl: 5.005
-version: 0.03
+  Class::Accessor::Fast: 0.19
+  Sys::SigAction: 0.1
+no_index:
+  directory:
+    - inc
+generated_by: Module::Install version 0.36

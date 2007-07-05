@@ -1,12 +1,19 @@
-0.01    2005-04-10
+0.10    2007-07-05
 
-  - Initial version.
+  - Added 'timeout' configuration parameter to keep connections from hanging forever.
+  - Added support for coderef connect option from Mark Stosberg (RT #24400)
+  - Added lazy-load.t regression test from Mark Stosberg (RT #24399)
+  - Updated pod based on suggestions from Mark Stosberg  (RT #24399)
+
+0.03    2007-01-08
+
+  - Regression tests to verify random selection works, submitted by MARKSTOS@cpan.org
 
 0.02    2006-06-21
 
   - Cleaned up documentation a little.
   - Fixed some regression tests.
 
-0.03    2007-01-08
+0.01    2005-04-10
 
-  - Regression tests to verify random selection works, submitted by MARKSTOS@cpan.org
+  - Initial version.
