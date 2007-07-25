@@ -1,12 +1,12 @@
 package DBD::Multi;
-# $Id: Multi.pm,v 1.16 2007/07/05 22:55:19 wright Exp $
+# $Id: Multi.pm,v 1.18 2007/07/25 21:44:00 wright Exp $
 use strict;
 
 use base qw[DBD::File];
 
 use vars qw[$VERSION $err $errstr $sqlstate $drh];
 
-$VERSION   = '0.10';
+$VERSION   = '0.11';
 
 $err       = 0;        # DBI::err
 $errstr    = "";       # DBI::errstr
@@ -106,11 +106,6 @@ sub prepare {
 sub disconnect {
     my ($dbh) = @_;
     $dbh->STORE(Active => 0);
-    $dbh->FETCH('_handler')->multi_do_all(sub {
-        my ($dbh, $dsource) = @_;
-        return unless $dbh;
-        $dbh->disconnect unless UNIVERSAL::isa($dsource, 'DBI::db');
-    }) if $dbh->FETCH('_handler');
     1;
 }
 
@@ -220,6 +215,7 @@ use strict;
 
 use base qw[Class::Accessor::Fast];
 use Sys::SigAction qw(timeout_call);
+use List::Util qw(shuffle);
 
 =begin ImplementationNotes
 
@@ -372,7 +368,7 @@ sub _pick_pri_dsource {
     # We've used them all but some are good. Purge and reuse.
     delete @{$self->used}{@dsources} if @used == @dsources;
 
-    foreach my $dsource ( @dsources ) {
+    foreach my $dsource ( shuffle @dsources ) {
         next if    $self->failed->{$dsource}
                 && $self->failed->{$dsource} >= $self->failed_max;
         next if $self->used->{$dsource};

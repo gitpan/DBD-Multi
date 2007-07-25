@@ -1,3 +1,10 @@
+0.11    2007-07-25
+
+  - When two DSN's had the same priority, Multi was always attempting the first
+    one in the list first rather than picking one randomly.   This has been 
+    corrected.
+  - Don't make a connection to every DB just to call disconnect().
+
 0.10    2007-07-05
 
   - Added 'timeout' configuration parameter to keep connections from hanging forever.
