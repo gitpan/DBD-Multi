@@ -6,7 +6,7 @@ use base qw[DBD::File];
 
 use vars qw[$VERSION $err $errstr $sqlstate $drh];
 
-$VERSION   = '0.11';
+$VERSION   = '0.12';
 
 $err       = 0;        # DBI::err
 $errstr    = "";       # DBI::errstr
@@ -558,9 +558,12 @@ operations.
 
 L<CGI::Application::Plugin::DBH> - A plugin for the L<CGI::Application> framework
 which makes it easy to support two database handles, and also supports lazy-loading.
-L<DBD::Multiplex>,
-L<DBI>,
-L<perl>.
+
+L<DBD::Multiplex>, L<DBIx::HA> - Two modules similar to DBD::Multi, but with
+slightly different objectives.
+
+L<DBI>, L<perl> - You should probably already know about these before using
+this module.
 
 =head1 AUTHOR
 

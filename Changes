@@ -1,20 +1,28 @@
+0.12    2007-08-28
+
+  - Added dependency listing for DBI to the Makefile to try and satisfy cpan
+    testers.
+  - Added dependency listing for DBD::SQLite, required for regression tests.
+
 0.11    2007-07-25
 
   - When two DSN's had the same priority, Multi was always attempting the first
-    one in the list first rather than picking one randomly.   This has been 
+    one in the list first rather than picking one randomly.   This has been
     corrected.
   - Don't make a connection to every DB just to call disconnect().
 
 0.10    2007-07-05
 
-  - Added 'timeout' configuration parameter to keep connections from hanging forever.
+  - Added 'timeout' configuration parameter to keep connections from hanging
+    forever.
   - Added support for coderef connect option from Mark Stosberg (RT #24400)
   - Added lazy-load.t regression test from Mark Stosberg (RT #24399)
   - Updated pod based on suggestions from Mark Stosberg  (RT #24399)
 
 0.03    2007-01-08
 
-  - Regression tests to verify random selection works, submitted by MARKSTOS@cpan.org
+  - Regression tests to verify random selection works, submitted by
+    MARKSTOS@cpan.org
 
 0.02    2006-06-21
 
