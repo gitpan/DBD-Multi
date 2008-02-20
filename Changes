@@ -1,3 +1,8 @@
+0.13    2008-02-20
+
+  - Added support for DBI_AUTOPROXY environment variable.  Suggested by 
+    Tim Bunce.  (RT #30250)
+
 0.12    2007-08-28
 
   - Added dependency listing for DBI to the Makefile to try and satisfy cpan

@@ -1,12 +1,12 @@
 package DBD::Multi;
-# $Id: Multi.pm,v 1.18 2007/07/25 21:44:00 wright Exp $
+# $Id: Multi.pm,v 1.21 2008/02/20 23:53:38 wright Exp $
 use strict;
 
 use base qw[DBD::File];
 
 use vars qw[$VERSION $err $errstr $sqlstate $drh];
 
-$VERSION   = '0.12';
+$VERSION   = '0.13';
 
 $err       = 0;        # DBI::err
 $errstr    = "";       # DBI::errstr
@@ -52,6 +52,10 @@ sub connect {
     my @dsns =   $attr->{dsns} && ref($attr->{dsns}) eq 'ARRAY'
                ? @{$attr->{dsns}}
                : ();
+
+    if ( $dbname =~ /dsn=(.*)/ ) {
+        push @dsns, ( -1, [$1, $user, $auth] );
+    }
 
     my $handler = DBD::Multi::Handler->new({
         dsources => [ @dsns ],
@@ -407,6 +411,7 @@ sub _connect_dsource {
     }
 
     my $dbh;
+    local $ENV{DBI_AUTOPROXY};
     if (timeout_call( $self->timeout, sub { $dbh = DBI->connect_cached(@{$dsource}) } )) {
         #warn "Timeout[", $self->current_dsource, "] at ", time, "\n";
     }
@@ -529,8 +534,8 @@ Here are some ideas on how to use this module effectively and safely.
 
 It is important to remember that C<DBD::Multi> is not intended for read-write
 operations.  One suggestion to prevent accidental write operations is to make
-sure the user your a connecting to the db as has privileges sufficiently
-restricted to prevent updates. 
+sure that the user you are connecting to the databases with has privileges
+sufficiently restricted to prevent updates. 
 
 Read-write operations should happen through a separate database handle that
 will somehow trigger replication to all of your databases.  For example, your
@@ -548,11 +553,26 @@ There really isn't much of a TODO list for this module at this time.  Feel free
 to submit a bug report to rt.cpan.org if you think there is a feature missing.
 
 Although there is some code intended for read/write operations, this should be
-considered note supported and not actively developed at this time.  The actual
+considered not supported and not actively developed at this time.  The actual
 read/write code remains un-documented because in the event that I ever do
 decide to work on supporting read/write operations, the API is not guaranteed
 to stay the same.  The focus of this module is presently limited to read-only
 operations.
+
+=head1 TESTING
+
+DBD::Multi has it's own suite of regression tests.   But, suppose you want to
+verify that you can slip DBD::Multi into whatever application you already have
+written without breaking anything.
+
+Thanks to a feature of DBI, you can regression test DBD::Multi using any
+existing tests that already use DBI without having to update any of your code.
+Simply set the environment variable DBI_AUTOPROXY to 'dbi:Multi:' and then run
+your tests.  DBD::Multi should act as a silent pipe between your application
+and whatever database driver you were previously using.  This will help you
+verify that you aren't currently using some feature of the DBI that breaks
+DBD::Multi (If you are, please do me a favor and submit a bug report so I can
+fix it).
 
 =head1 SEE ALSO
 
