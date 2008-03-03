@@ -1,3 +1,9 @@
+0.14    2008-03-03
+
+  - Updated required perl version from 5.5.0 to 5.8.0 after receiving
+    reports of core dumps under 5.6.2 from cpantesters.  Tried to diagnose
+    the problem but didn't really get anywhere.
+
 0.13    2008-02-20
 
   - Added support for DBI_AUTOPROXY environment variable.  Suggested by 

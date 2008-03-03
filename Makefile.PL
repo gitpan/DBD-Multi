@@ -5,7 +5,7 @@ abstract        ('Failover and Load Balancing of DBI Handles');
 author          ('Dan Wright <dwright@cpan.org>');
 version_from    ('lib/DBD/Multi.pm');
 license         ('perl');
-requires        ('perl' => 5.005);
+requires        ('perl' => 5.008);
 requires        ('Class::Accessor::Fast' => 0.19 );
 requires        ('Sys::SigAction'        => 0.10 );
 requires        ('List::Util'            => 1.18 );
