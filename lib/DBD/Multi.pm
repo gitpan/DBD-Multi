@@ -1,12 +1,12 @@
 package DBD::Multi;
-# $Id: Multi.pm,v 1.22 2008/03/03 21:28:26 wright Exp $
+# $Id: Multi.pm,v 1.23 2010/07/16 00:12:58 wright Exp $
 use strict;
 
 use base qw[DBD::File];
 
 use vars qw[$VERSION $err $errstr $sqlstate $drh];
 
-$VERSION   = '0.14';
+$VERSION   = '0.15';
 
 $err       = 0;        # DBI::err
 $errstr    = "";       # DBI::errstr
@@ -408,6 +408,7 @@ sub _connect_dsource {
     if (ref $dsource eq 'CODE') {
         my $handle = $dsource->();
         return $handle if UNIVERSAL::isa($handle, 'DBI::db');
+        return undef; # Connect by coderef failed.
     }
 
     my $dbh;

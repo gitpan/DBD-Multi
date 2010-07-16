@@ -1,6 +1,6 @@
 # vim: ft=perl
 use Test::More 'no_plan';
-# $Id: handle-as-coderef.t,v 1.1 2007/07/05 20:52:06 wright Exp $
+# $Id: handle-as-coderef.t,v 1.2 2010/07/16 00:12:58 wright Exp $
 use strict;
 $^W = 1;
 
@@ -26,10 +26,23 @@ isa_ok $sth, 'DBI::st';
 # two
 is $c->do("CREATE TABLE multi(id int)"), '0E0', 'do successful';
 
-$SIG{__WARN__} = sub {}; # I don't want to hear it.
-eval {
-    my $sth = $c->prepare("CREAATE TABLE multi(id int)");
-};
-ok $@, "$@";
+{
+    local $SIG{__WARN__} = sub { };    # I don't want to hear it.
+    eval { my $sth = $c->prepare("CREAATE TABLE multi(id int)"); };
+    ok $@, "Syntax errror: $@";
+}
+
+$c = DBI->connect('DBI:Multi:', undef, undef, {
+    dsns => [
+        1 => sub { return undef },
+        2 => ['dbi:SQLite:one.db', '',''],
+    ],
+});
+
+# CPAN Ticket 58769
+my $sth2 = $c->prepare("CREATE TABLE multi2(id int)");
+isa_ok $sth2, 'DBI::st';
+is $c->do("CREATE TABLE multi2(id int)"), '0E0', 'do successful';
 
 unlink "$_.db" for qw[one two three four five six seven eight nine ten];
+

@@ -1,3 +1,8 @@
+0.15    2010-07-15
+
+  - Catch error when a coderef datasource fails to connect to the database
+    properly.  Thanks to NCLEATON (RT #58769)
+
 0.14    2008-03-03
 
   - Updated required perl version from 5.5.0 to 5.8.0 after receiving
