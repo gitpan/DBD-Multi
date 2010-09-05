@@ -1,12 +1,13 @@
 package DBD::Multi;
-# $Id: Multi.pm,v 1.23 2010/07/16 00:12:58 wright Exp $
+# $Id: Multi.pm,v 1.24 2010/09/05 20:28:21 wright Exp $
 use strict;
 
-use base qw[DBD::File];
+use DBI;
+DBI->setup_driver('DBD::Multi');
 
 use vars qw[$VERSION $err $errstr $sqlstate $drh];
 
-$VERSION   = '0.15';
+$VERSION   = '0.16';
 
 $err       = 0;        # DBI::err
 $errstr    = "";       # DBI::errstr
@@ -14,10 +15,11 @@ $sqlstate  = "";       # DBI::state
 $drh       = undef;
 
 sub driver {
-    my($class, $attr) = @_;
     return $drh if $drh;
-    DBI->setup_driver($class);
-    my $self = $class->SUPER::driver({
+    my($class, $attr) = @_;
+    $class .= '::dr';
+
+    $drh = DBI::_new_drh($class, {
         Name        => 'Multi',
         Version     => $VERSION,
         Err         => \$DBD::Multi::err,
@@ -26,8 +28,8 @@ sub driver {
         Attribution => 'DBD::Multi, pair Networks Inc.',
     });
     # This doesn't work without formal registration with DBI
-    # DBD::Multi::db->install_method('multi_do_all');
-    return $self;
+    #DBD::Multi::db->install_method('multi_do_all');
+    return $drh;
 }
 
 #######################################################################
@@ -36,7 +38,6 @@ use strict;
 
 $DBD::Multi::dr::imp_data_size = 0;
 use DBD::File;
-use base qw[DBD::File::dr];
 
 sub DESTROY { shift->STORE(Active => 0) }
 
@@ -79,7 +80,6 @@ package DBD::Multi::db;
 use strict;
 
 $DBD::Multi::db::imp_data_size = 0;
-use base qw[DBD::File::db];
 
 sub prepare {
     my ($dbh, $statement, @attribs) = @_;
@@ -142,7 +142,6 @@ package DBD::Multi::st;
 use strict;
 
 $DBD::Multi::st::imp_data_size = 0;
-use base qw[DBD::File::st];
 
 use vars qw[@METHODS @FIELDS];
 @METHODS = qw[

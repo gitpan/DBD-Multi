@@ -1,3 +1,8 @@
+0.16    2010-09-05
+
+  - No longer derived from DBD::File.   Fixes compatability issues with DBI
+    versions between 1.611_90 and 1.614.  (RT #60193)
+
 0.15    2010-07-15
 
   - Catch error when a coderef datasource fails to connect to the database
