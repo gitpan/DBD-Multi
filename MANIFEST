@@ -23,4 +23,5 @@ t/pod.t
 t/random.t
 t/lazy-load.t
 t/handle-as-coderef.t
+t/get_info.t
 TODO

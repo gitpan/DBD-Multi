@@ -1,5 +1,5 @@
 package DBD::Multi;
-# $Id: Multi.pm,v 1.24 2010/09/05 20:28:21 wright Exp $
+# $Id: Multi.pm,v 1.26 2013/04/09 21:57:19 wright Exp $
 use strict;
 
 use DBI;
@@ -7,7 +7,7 @@ DBI->setup_driver('DBD::Multi');
 
 use vars qw[$VERSION $err $errstr $sqlstate $drh];
 
-$VERSION   = '0.16';
+$VERSION   = '0.18';
 
 $err       = 0;        # DBI::err
 $errstr    = "";       # DBI::errstr
@@ -129,6 +129,14 @@ sub rollback {
     return;
 }
 
+sub get_info {
+    my($dbh, $info_type) = @_;
+
+    # return info from current connection
+    my $handler = $dbh->FETCH('_handler');
+    my $_dbh = $handler->dbh;
+    return $_dbh->get_info($info_type);
+}
 
 sub STORE {
     my ($self, $attr, $val) = @_;
